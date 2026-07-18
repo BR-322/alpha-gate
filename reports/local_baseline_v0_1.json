@@ -1,0 +1,110 @@
+{
+  "report_version": "0.1",
+  "status": "preflight",
+  "experiment_id": "local-baseline-ecb-carry-s17-b32-v1",
+  "run_date": "2026-07-18",
+  "environment": {
+    "alpha_gate_git_commit": "770dc67bb89533d8f7bd13b4e8613342babc45df",
+    "working_tree_dirty": true,
+    "uv_lock_sha256": "9a095d8158b79c60282bd2df2d3d03d7fe39d647a827f6f48eba77f25dae7061",
+    "sandbox_dockerfile_sha256": "36dc46b936acccf93cb8adcfe3bc4d0dae896ed8d0f615382c2a63e2c71b3c9b",
+    "sandbox_image_id_at_run": "sha256:57d39c8fc6b0312dfbd2c5d217a8e3b910ba10613fbfc5bdfaaebbe7767d85ea",
+    "runtime": "docker"
+  },
+  "configuration": {
+    "dataset": "ecb_fx_carry",
+    "dataset_label": "ECB daily euro foreign exchange reference rates (2009-2024; source values unmodified) with public short-rate carry proxy (28 pairs)",
+    "symbols": 28,
+    "as_of_index": 3000,
+    "first_scored_date": "2020-09-22",
+    "last_scored_date": "2022-01-10",
+    "seed": 17,
+    "generations": 4,
+    "batch_size": 8,
+    "evaluation_budget": 32,
+    "elite_count": 2,
+    "windows": 8,
+    "window_days": 42,
+    "warmup_days": 253,
+    "cost_bps_per_side": 10.0
+  },
+  "results": {
+    "evaluations_used": 32,
+    "generations_completed": 4,
+    "valid_candidates": 21,
+    "invalid_candidates": 11,
+    "final_passes": 0,
+    "unique_program_hashes": 32,
+    "valid_behavior_signatures": 10,
+    "sandbox_window_launches": 179,
+    "completed_window_launches": 168,
+    "protocol_error_launches": 11,
+    "sandbox_seconds": 57.738473631907254,
+    "invalidity": {
+      "portfolio gross exposure exceeds max_gross": 7,
+      "a position exceeds max_abs_weight": 4
+    }
+  },
+  "best_final_candidate": {
+    "candidate_id": "local-baseline-ecb-carry-s17-b32-v1:g0003:t000027",
+    "program_sha256": "b3092128db0c8b0587fb7c40824c3ce6e3f639cbccbddb722f9b1e452ffb8c0e",
+    "reward": 0.10004421589333405,
+    "passed": false,
+    "raw_sharpe": 0.8035328366716539,
+    "dsr": 0.00011369801143035208,
+    "diagnostic_dsr": 0.0753528506199726,
+    "pbo": 0.04285714285714286,
+    "window_tail_score": -0.540448019112692,
+    "expected_shortfall_ratio": 3.1702554213176986,
+    "turnover": 18.0,
+    "carry_contribution": -0.043557156169802776,
+    "average_gross_exposure": 0.5,
+    "effective_position_count": 2.0,
+    "window_sharpes": [
+      -0.21094873956191396,
+      -1.78248061608645,
+      0.5461642374461222,
+      2.5684447403691726,
+      -1.6076357585407168,
+      -2.7248832874988365,
+      1.538028021058774,
+      2.545432851498374
+    ],
+    "lineage": [
+      "unmodified seed",
+      "line 19 numeric literal 0 -> 1",
+      "line 24 numeric literal 1.0 -> 0.8",
+      "line 29 numeric literal 2 -> 1"
+    ]
+  },
+  "seed_backtest": {
+    "program_sha256": "763e39b8333230e19ec98c15eb53e554d1066768c03cc8a965a71a23b7ced3a4",
+    "raw_sharpe": -3.1159711006828057,
+    "window_tail_score": -3.700220452982271,
+    "expected_shortfall_ratio": 4.262110571198075,
+    "turnover": 189.5,
+    "carry_contribution": -0.01162039383525984,
+    "average_gross_exposure": 1.0,
+    "effective_position_count": 4.0,
+    "window_sharpes": [
+      -3.320102100875728,
+      -9.405701576200036,
+      -4.558061590121714,
+      -2.6660671913504514,
+      -4.999657972407634,
+      -10.97731217865695,
+      -1.802381557615544,
+      -1.2639092215824597
+    ]
+  },
+  "ledger": {
+    "path": "reports/runs/local-baseline-ecb-carry-s17-b32-v1.jsonl",
+    "sha256": "a7119ace6b53ece0140246344f05f1cdbf9074a1e1786e206748ec88b70c4c33"
+  },
+  "limitations": [
+    "This is a one-seed, one-cutoff preflight and not the final multi-seed bake-off baseline.",
+    "The run used an uncommitted working tree; freeze and rerun after the local loop is committed.",
+    "Ledger rewards are evaluation-time cumulative snapshots; early rows are not directly comparable with final 32-trial scores.",
+    "The current CLI persists only the final best score, not a final rescored table for every candidate."
+  ]
+}

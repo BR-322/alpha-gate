@@ -8,6 +8,7 @@ from alpha_gate.candidate import (
     CandidateValidator,
 )
 from alpha_gate.evaluator import ProgramGroupEvaluator
+from alpha_gate.evolution import Evolver, LocalEvolver
 from alpha_gate.executors.base import (
     ExecutionLimits,
     SandboxExecutor,
@@ -15,14 +16,31 @@ from alpha_gate.executors.base import (
     SandboxResult,
     SandboxStatus,
 )
+from alpha_gate.experiment import ExperimentConfig, ExperimentResult, ExperimentRunner
+from alpha_gate.ledger import JsonlLedger, MemoryLedger, TrialRecord
 from alpha_gate.scoring import ProgramHonestScorer, ProgramScore
+from alpha_gate.summary import (
+    EvaluationProtocol,
+    ExperimentSummary,
+    FinalCandidateSummary,
+)
 
 __all__ = [
     "CandidateMetadata",
     "CandidateProgram",
     "CandidateSourceError",
     "CandidateValidator",
+    "EvaluationProtocol",
+    "Evolver",
     "ExecutionLimits",
+    "ExperimentConfig",
+    "ExperimentResult",
+    "ExperimentRunner",
+    "ExperimentSummary",
+    "FinalCandidateSummary",
+    "JsonlLedger",
+    "LocalEvolver",
+    "MemoryLedger",
     "ProgramBacktester",
     "ProgramEvaluation",
     "ProgramGroupEvaluator",
@@ -32,6 +50,7 @@ __all__ = [
     "SandboxRequest",
     "SandboxResult",
     "SandboxStatus",
+    "TrialRecord",
 ]
 
 __version__ = "0.1.0"

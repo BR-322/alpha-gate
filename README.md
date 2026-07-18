@@ -19,10 +19,10 @@ advice or a trading system.
 ## Current status
 
 The local reference path now defines the Python candidate protocol, a
-pluggable `SandboxExecutor`, and a trusted windowed `ProgramBacktester`. The
-reference executor targets Docker or Podman. A Cloud Run code-execution-
-sandbox backend will implement the same contract after the offline
-adversarial suite is green.
+pluggable `SandboxExecutor`, a trusted windowed `ProgramBacktester`, and a
+budget-bounded experiment loop. The deterministic `LocalEvolver` is the
+cloud-free control; it mutates numeric literals inside AlphaEvolve-compatible
+evolve blocks. The reference executor targets Docker or Podman.
 
 AlphaEvolve generation runs in Google Cloud, but its controller and evaluator
 are client-side. Alpha-Gate therefore keeps candidate execution and scoring
@@ -43,6 +43,8 @@ honesty-shaped score.
 See [ADR 0001](docs/adr/0001-python-strategies-and-sandbox-executors.md) for
 the candidate decision and threat model, and [ADR 0002](docs/adr/0002-windowed-program-backtests-and-scoring.md)
 for execution-lag, window-reset, cost, and scorer-adapter semantics.
+See [ADR 0003](docs/adr/0003-cumulative-local-evolution-and-ledger.md) for
+cumulative trial accounting, exact evaluation budgets, and the audit ledger.
 
 The response produced after observing session `d - 1` is the target portfolio
 for session `d`. Each scoring window receives a fresh strategy instance and a
@@ -79,6 +81,26 @@ docker build -f containers/sandbox/Dockerfile -t alpha-gate-sandbox:dev .
 uv run pytest -m container
 ```
 
+Run a four-candidate smoke experiment after the image is built:
+
+```bash
+uv run alpha-gate run-local examples/seed_strategy.py \
+  --experiment-id local-smoke-001 \
+  --as-of-index 1000 \
+  --generations 1 \
+  --batch-size 4 \
+  --evaluation-budget 4 \
+  --ledger reports/runs/local-smoke-001.jsonl
+```
+
+The CLI checks both the runtime and sandbox image before consuming the
+evaluation budget. It refuses to reuse an experiment ID already present in the
+ledger. Every JSONL row contains the complete candidate source, its score
+snapshot, lineage, error, and per-window sandbox accounting.
+After a successful run, a sibling `*.summary.json` file contains the complete
+final cumulative ranking and reproduction configuration. Use `--summary` to
+choose a different path; existing summaries are never overwritten.
+
 The build context is intentionally limited by `.dockerignore` to the protocol
 worker and Dockerfile. Never run generated candidates directly on the host;
 the example seed is repository-authored test code, not an isolation boundary.
@@ -91,12 +113,11 @@ uv sync --extra cloud --group dev
 
 ## Next milestone
 
-The next vertical slice is the evolver-neutral experiment loop: a batch
-`Evolver` contract, a deterministic local source-mutation baseline, and an
-evaluation ledger that counts every proposed program exactly once while
-recording its per-window sandbox cost. That local loop will produce the first
-reproducible report before either the Cloud Run executor or AlphaEvolve adapter
-is allowed to spend cloud budget.
+Run and inspect the first bounded local baseline on a real container runtime,
+then implement the Cloud Run executor behind the existing `SandboxExecutor`
+contract and make it pass the same adversarial suite. The AlphaEvolve adapter
+comes after that parity check and starts with a separately approved, tiny
+evaluation budget.
 
 ## Pinned upstreams
 
