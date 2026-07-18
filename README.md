@@ -113,11 +113,14 @@ uv sync --extra cloud --group dev
 
 ## Next milestone
 
-Run and inspect the first bounded local baseline on a real container runtime,
-then implement the Cloud Run executor behind the existing `SandboxExecutor`
+The frozen 32-candidate local baseline is documented in
+[`reports/local_baseline_v0_2.md`](reports/local_baseline_v0_2.md), with its
+complete final ranking in
+[`reports/local_baseline_v0_2.json`](reports/local_baseline_v0_2.json). Next,
+implement the Cloud Run executor behind the existing `SandboxExecutor`
 contract and make it pass the same adversarial suite. The AlphaEvolve adapter
 comes after that parity check and starts with a separately approved, tiny
-evaluation budget.
+evaluation budget matched to the local baseline.
 
 ## Pinned upstreams
 
