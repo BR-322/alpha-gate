@@ -1,0 +1,73 @@
+[project]
+name = "alpha-gate"
+version = "0.1.0"
+description = "Honesty-shaped evolutionary search for sandboxed Python trading strategies"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+authors = [{ name = "BR-322" }]
+dependencies = [
+    "gate-runner",
+    "numpy>=2.0,<3",
+    "pydantic>=2.8,<3",
+]
+
+[project.optional-dependencies]
+cloud = ["alpha-evolve"]
+
+[project.scripts]
+alpha-gate = "alpha_gate.cli:main"
+
+[project.urls]
+Repository = "https://github.com/BR-322/alpha-gate"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alpha_gate"]
+
+[tool.uv]
+required-version = ">=0.11.28"
+
+[tool.uv.sources]
+gate-runner = { git = "https://github.com/BR-322/gate-runner.git", rev = "274870d57a235355e12338cc3e18d1bd5d682788", subdirectory = "environments/gate_runner" }
+alpha-evolve = { git = "https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud.git", rev = "8693985fa0eebf1a3b8fe2a64b7594e74ddb6557" }
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.2",
+    "pytest-cov>=7.0",
+    "ruff>=0.13",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "container: requires a local Docker- or Podman-compatible runtime",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["alpha_gate"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["alpha_gate"]
+plugins = ["pydantic.mypy"]

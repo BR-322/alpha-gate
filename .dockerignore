@@ -1,0 +1,8 @@
+*
+!containers/
+!containers/sandbox/
+!containers/sandbox/Dockerfile
+!src/
+!src/alpha_gate/
+!src/alpha_gate/runtime/
+!src/alpha_gate/runtime/worker.py
