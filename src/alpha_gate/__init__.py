@@ -16,6 +16,11 @@ from alpha_gate.executors.base import (
     SandboxResult,
     SandboxStatus,
 )
+from alpha_gate.executors.cloud_run import CloudRunExecutor, CloudRunExecutorConfig
+from alpha_gate.executors.cloud_sandbox import (
+    CloudRunSandboxConfig,
+    CloudRunSandboxExecutor,
+)
 from alpha_gate.experiment import ExperimentConfig, ExperimentResult, ExperimentRunner
 from alpha_gate.ledger import JsonlLedger, MemoryLedger, TrialRecord
 from alpha_gate.scoring import ProgramHonestScorer, ProgramScore
@@ -30,6 +35,10 @@ __all__ = [
     "CandidateProgram",
     "CandidateSourceError",
     "CandidateValidator",
+    "CloudRunExecutor",
+    "CloudRunExecutorConfig",
+    "CloudRunSandboxConfig",
+    "CloudRunSandboxExecutor",
     "EvaluationProtocol",
     "Evolver",
     "ExecutionLimits",

@@ -13,7 +13,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cloud = ["alpha-evolve"]
+cloud = [
+    "alpha-evolve",
+    "google-auth>=2.40,<3",
+]
 
 [project.scripts]
 alpha-gate = "alpha_gate.cli:main"
@@ -48,6 +51,7 @@ dev = [
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
 markers = [
+    "cloud: requires a deployed Alpha-Gate Cloud Run broker",
     "container: requires a local Docker- or Podman-compatible runtime",
 ]
 

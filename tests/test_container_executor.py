@@ -41,6 +41,7 @@ def test_command_hardens_and_minimizes_container_mounts(tmp_path: Path) -> None:
     mount = command[command.index("--mount") + 1]
     assert f"source={candidate.resolve()}" in mount
     assert "target=/candidate/strategy.py,readonly" in mount
+    assert command[-4:-2] == ("-s", "-B")
 
 
 @pytest.mark.asyncio

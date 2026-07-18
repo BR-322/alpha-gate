@@ -22,7 +22,10 @@ The local reference path now defines the Python candidate protocol, a
 pluggable `SandboxExecutor`, a trusted windowed `ProgramBacktester`, and a
 budget-bounded experiment loop. The deterministic `LocalEvolver` is the
 cloud-free control; it mutates numeric literals inside AlphaEvolve-compatible
-evolve blocks. The reference executor targets Docker or Podman.
+evolve blocks. The reference executor targets Docker or Podman. An
+IAM-protected Cloud Run broker now implements the same contract with Cloud
+Run's nested sandbox preview; live parity remains gated on the shared
+adversarial suite.
 
 AlphaEvolve generation runs in Google Cloud, but its controller and evaluator
 are client-side. Alpha-Gate therefore keeps candidate execution and scoring
@@ -45,6 +48,8 @@ the candidate decision and threat model, and [ADR 0002](docs/adr/0002-windowed-p
 for execution-lag, window-reset, cost, and scorer-adapter semantics.
 See [ADR 0003](docs/adr/0003-cumulative-local-evolution-and-ledger.md) for
 cumulative trial accounting, exact evaluation budgets, and the audit ledger.
+See [ADR 0004](docs/adr/0004-cloud-run-nested-sandbox-broker.md) for the
+trusted Cloud Run broker, minimal readable image, and preview contingency.
 
 The response produced after observing session `d - 1` is the target portfolio
 for session `d`. Each scoring window receives a fresh strategy instance and a
@@ -111,16 +116,21 @@ Cloud dependencies are optional:
 uv sync --extra cloud --group dev
 ```
 
+Provisioning and live parity commands are in
+[`docs/CLOUD_RUN_BROKER.md`](docs/CLOUD_RUN_BROKER.md). The deployed service is
+private, scale-to-zero, concurrency one, and uses a zero-role runtime identity.
+
 ## Next milestone
 
 The frozen 32-candidate local baseline is documented in
 [`reports/local_baseline_v0_2.md`](reports/local_baseline_v0_2.md), with its
 complete final ranking in
 [`reports/local_baseline_v0_2.json`](reports/local_baseline_v0_2.json). Next,
-implement the Cloud Run executor behind the existing `SandboxExecutor`
-contract and make it pass the same adversarial suite. The AlphaEvolve adapter
-comes after that parity check and starts with a separately approved, tiny
-evaluation budget matched to the local baseline.
+integrate AlphaEvolve with the now-parity-checked Cloud Run executor. The first
+generated-candidate smoke run starts with a separately approved, tiny
+evaluation budget matched against the local control. The Cloud Run parity
+evidence is frozen in
+[`reports/cloud_run_parity_v0_1.md`](reports/cloud_run_parity_v0_1.md).
 
 ## Pinned upstreams
 

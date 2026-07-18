@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from alpha_gate.candidate import CandidateProgram
 from alpha_gate.executors.base import ExecutionLimits, SandboxRequest
-from alpha_gate.executors.container import ProtocolViolation, validate_weights
+from alpha_gate.executors.process import ProtocolViolation, validate_weights
 from alpha_gate.protocol import BarFrame, InitializeFrame, WeightsResponse
 
 from .conftest import SAFE_SOURCE, make_bar

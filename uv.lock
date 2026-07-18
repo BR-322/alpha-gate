@@ -110,6 +110,7 @@ dependencies = [
 [package.optional-dependencies]
 cloud = [
     { name = "alpha-evolve" },
+    { name = "google-auth" },
 ]
 
 [package.dev-dependencies]
@@ -125,6 +126,7 @@ dev = [
 requires-dist = [
     { name = "alpha-evolve", marker = "extra == 'cloud'", git = "https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud.git?rev=8693985fa0eebf1a3b8fe2a64b7594e74ddb6557" },
     { name = "gate-runner", git = "https://github.com/BR-322/gate-runner.git?subdirectory=environments%2Fgate_runner&rev=274870d57a235355e12338cc3e18d1bd5d682788" },
+    { name = "google-auth", marker = "extra == 'cloud'", specifier = ">=2.40,<3" },
     { name = "numpy", specifier = ">=2.0,<3" },
     { name = "pydantic", specifier = ">=2.8,<3" },
 ]
