@@ -18,10 +18,11 @@ advice or a trading system.
 
 ## Current status
 
-The first milestone defines the Python candidate protocol and a pluggable
-`SandboxExecutor`. The reference executor targets Docker or Podman. A Cloud
-Run code-execution-sandbox backend will implement the same contract after the
-offline adversarial suite is green.
+The local reference path now defines the Python candidate protocol, a
+pluggable `SandboxExecutor`, and a trusted windowed `ProgramBacktester`. The
+reference executor targets Docker or Podman. A Cloud Run code-execution-
+sandbox backend will implement the same contract after the offline
+adversarial suite is green.
 
 AlphaEvolve generation runs in Google Cloud, but its controller and evaluator
 are client-side. Alpha-Gate therefore keeps candidate execution and scoring
@@ -40,7 +41,15 @@ weights, applies trading costs, constructs return streams, and computes the
 honesty-shaped score.
 
 See [ADR 0001](docs/adr/0001-python-strategies-and-sandbox-executors.md) for
-the complete decision and threat model.
+the candidate decision and threat model, and [ADR 0002](docs/adr/0002-windowed-program-backtests-and-scoring.md)
+for execution-lag, window-reset, cost, and scorer-adapter semantics.
+
+The response produced after observing session `d - 1` is the target portfolio
+for session `d`. Each scoring window receives a fresh strategy instance and a
+trailing warm-up; the candidate never receives the final outcome row before
+its portfolio is fixed. Invalid programs and sandbox failures remain part of
+the group trial count. Python source size and AST nodes are reported but do
+not affect reward.
 
 ## Development
 
@@ -79,6 +88,15 @@ Cloud dependencies are optional:
 ```bash
 uv sync --extra cloud --group dev
 ```
+
+## Next milestone
+
+The next vertical slice is the evolver-neutral experiment loop: a batch
+`Evolver` contract, a deterministic local source-mutation baseline, and an
+evaluation ledger that counts every proposed program exactly once while
+recording its per-window sandbox cost. That local loop will produce the first
+reproducible report before either the Cloud Run executor or AlphaEvolve adapter
+is allowed to spend cloud budget.
 
 ## Pinned upstreams
 

@@ -69,5 +69,6 @@ select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+follow_untyped_imports = true
 packages = ["alpha_gate"]
 plugins = ["pydantic.mypy"]

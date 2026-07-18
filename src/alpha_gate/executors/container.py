@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import math
 import shutil
 import tempfile
 import time
@@ -32,6 +31,7 @@ from alpha_gate.protocol import (
     StopFrame,
     StoppedResponse,
     WeightsResponse,
+    validate_target_weights,
 )
 
 
@@ -63,22 +63,10 @@ def validate_weights(
 ) -> tuple[float, ...]:
     """Validate a candidate portfolio before trusted code can consume it."""
 
-    weights = response.weights
-    if len(weights) != len(initialization.symbols):
-        raise ProtocolViolation("weight count does not match symbol count")
-    tolerance = 1e-12
-    if not initialization.allow_short and any(
-        weight < -tolerance for weight in weights
-    ):
-        raise ProtocolViolation("negative weights are disabled")
-    if any(
-        abs(weight) > initialization.max_abs_weight + tolerance for weight in weights
-    ):
-        raise ProtocolViolation("a position exceeds max_abs_weight")
-    gross = math.fsum(abs(weight) for weight in weights)
-    if gross > initialization.max_gross + tolerance:
-        raise ProtocolViolation("portfolio gross exposure exceeds max_gross")
-    return weights
+    try:
+        return validate_target_weights(response.weights, initialization)
+    except ValueError as exc:
+        raise ProtocolViolation(str(exc)) from exc
 
 
 class ContainerExecutor(SandboxExecutor):

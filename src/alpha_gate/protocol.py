@@ -95,6 +95,31 @@ class WeightsResponse(StrictModel):
         return self
 
 
+def validate_target_weights(
+    weights: tuple[float, ...],
+    initialization: InitializeFrame,
+) -> tuple[float, ...]:
+    """Validate an executor portfolio before trusted scoring consumes it."""
+
+    if len(weights) != len(initialization.symbols):
+        raise ValueError("weight count does not match symbol count")
+    if any(not math.isfinite(weight) for weight in weights):
+        raise ValueError("weights must contain only finite values")
+    tolerance = 1e-12
+    if not initialization.allow_short and any(
+        weight < -tolerance for weight in weights
+    ):
+        raise ValueError("negative weights are disabled")
+    if any(
+        abs(weight) > initialization.max_abs_weight + tolerance for weight in weights
+    ):
+        raise ValueError("a position exceeds max_abs_weight")
+    gross = math.fsum(abs(weight) for weight in weights)
+    if gross > initialization.max_gross + tolerance:
+        raise ValueError("portfolio gross exposure exceeds max_gross")
+    return weights
+
+
 class CandidateErrorResponse(StrictModel):
     type: Literal["error"] = "error"
     sequence: int | None = Field(default=None, ge=0)
