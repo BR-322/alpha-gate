@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import shutil
@@ -22,6 +23,9 @@ from alpha_gate.executors.base import (
     SandboxStatus,
 )
 from alpha_gate.executors.process import JsonlProcessDriver
+
+_CLEANUP_ATTEMPTS = 3
+_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
 class CloudRunSandboxConfig(BaseModel):
@@ -127,10 +131,17 @@ class CloudRunSandboxExecutor(SandboxExecutor):
                     unavailable_label="Cloud Run sandbox launcher",
                 )
             finally:
-                await self._delete_sandbox(
-                    launcher_path,
-                    sandbox_name,
+                cleanup = asyncio.create_task(
+                    self._delete_sandbox(
+                        launcher_path,
+                        sandbox_name,
+                    )
                 )
+                try:
+                    await asyncio.shield(cleanup)
+                except asyncio.CancelledError:
+                    await cleanup
+                    raise
 
     def _envelope_error(self, limits: ExecutionLimits) -> str:
         if limits.cpu_cores > self.config.cpu_ceiling:
@@ -141,21 +152,35 @@ class CloudRunSandboxExecutor(SandboxExecutor):
 
     @staticmethod
     async def _delete_sandbox(launcher_path: str, sandbox_name: str) -> None:
-        """Best-effort cleanup, including failed and forcibly stopped commands."""
+        """Delete a named sandbox with bounded retries after every execution path."""
 
-        process: asyncio.subprocess.Process | None = None
-        try:
-            process = await asyncio.create_subprocess_exec(
-                launcher_path,
-                "delete",
-                sandbox_name,
-                "--force",
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
-            )
-            await asyncio.wait_for(process.wait(), timeout=5.0)
-        except (OSError, TimeoutError):
-            if process is not None and process.returncode is None:
-                process.kill()
-                await process.wait()
-            logging.exception("failed to clean up Cloud Run sandbox %s", sandbox_name)
+        for attempt in range(_CLEANUP_ATTEMPTS):
+            process: asyncio.subprocess.Process | None = None
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    launcher_path,
+                    "delete",
+                    sandbox_name,
+                    "--force",
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                returncode = await asyncio.wait_for(
+                    process.wait(),
+                    timeout=_CLEANUP_TIMEOUT_SECONDS,
+                )
+                if returncode == 0:
+                    return
+            except (OSError, TimeoutError):
+                if process is not None and process.returncode is None:
+                    with contextlib.suppress(ProcessLookupError):
+                        process.kill()
+                    await process.wait()
+            if attempt + 1 < _CLEANUP_ATTEMPTS:
+                await asyncio.sleep(0.1 * (2**attempt))
+
+        logging.error(
+            "failed to clean up Cloud Run sandbox %s after %d attempts",
+            sandbox_name,
+            _CLEANUP_ATTEMPTS,
+        )

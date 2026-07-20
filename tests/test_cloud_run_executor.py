@@ -13,9 +13,11 @@ from alpha_gate.executors.cloud_run import CloudRunExecutor, CloudRunExecutorCon
 
 
 def _token(expiry: float) -> str:
-    payload = base64.urlsafe_b64encode(
-        json.dumps({"exp": expiry}).encode("utf-8")
-    ).decode("ascii").rstrip("=")
+    payload = (
+        base64.urlsafe_b64encode(json.dumps({"exp": expiry}).encode("utf-8"))
+        .decode("ascii")
+        .rstrip("=")
+    )
     return f"header.{payload}.signature"
 
 
@@ -38,11 +40,15 @@ async def test_authenticated_remote_result_round_trips_and_reuses_token(
         _max_response_bytes: int,
     ) -> bytes:
         calls.append((url, headers, timeout, payload))
-        return SandboxResult(
-            status=SandboxStatus.COMPLETED,
-            program_sha256=sandbox_request.program.sha256,
-            duration_seconds=0.01,
-        ).model_dump_json().encode("utf-8")
+        return (
+            SandboxResult(
+                status=SandboxStatus.COMPLETED,
+                program_sha256=sandbox_request.program.sha256,
+                duration_seconds=0.01,
+            )
+            .model_dump_json()
+            .encode("utf-8")
+        )
 
     executor = CloudRunExecutor(
         CloudRunExecutorConfig(service_url="https://broker.example.run.app"),
@@ -76,11 +82,15 @@ async def test_no_auth_mode_never_requests_a_token(sandbox_request) -> None:
         _max_response_bytes: int,
     ) -> bytes:
         assert "Authorization" not in headers
-        return SandboxResult(
-            status=SandboxStatus.COMPLETED,
-            program_sha256=sandbox_request.program.sha256,
-            duration_seconds=0.01,
-        ).model_dump_json().encode()
+        return (
+            SandboxResult(
+                status=SandboxStatus.COMPLETED,
+                program_sha256=sandbox_request.program.sha256,
+                duration_seconds=0.01,
+            )
+            .model_dump_json()
+            .encode()
+        )
 
     executor = CloudRunExecutor(
         CloudRunExecutorConfig(
@@ -105,11 +115,15 @@ async def test_mismatched_remote_hash_is_protocol_error(sandbox_request) -> None
         _timeout: float,
         _max_response_bytes: int,
     ) -> bytes:
-        return SandboxResult(
-            status=SandboxStatus.COMPLETED,
-            program_sha256="wrong",
-            duration_seconds=0.01,
-        ).model_dump_json().encode()
+        return (
+            SandboxResult(
+                status=SandboxStatus.COMPLETED,
+                program_sha256="wrong",
+                duration_seconds=0.01,
+            )
+            .model_dump_json()
+            .encode()
+        )
 
     executor = CloudRunExecutor(
         CloudRunExecutorConfig(
@@ -168,11 +182,15 @@ async def test_pre_dispatch_throttling_retries_within_one_deadline(
         attempts += 1
         if attempts < 3:
             raise urllib.error.HTTPError(url, 429, "throttled", {}, None)
-        return SandboxResult(
-            status=SandboxStatus.COMPLETED,
-            program_sha256=sandbox_request.program.sha256,
-            duration_seconds=0.01,
-        ).model_dump_json().encode()
+        return (
+            SandboxResult(
+                status=SandboxStatus.COMPLETED,
+                program_sha256=sandbox_request.program.sha256,
+                duration_seconds=0.01,
+            )
+            .model_dump_json()
+            .encode()
+        )
 
     executor = CloudRunExecutor(
         CloudRunExecutorConfig(

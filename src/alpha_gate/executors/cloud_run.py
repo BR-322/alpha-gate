@@ -201,8 +201,7 @@ class CloudRunExecutor(SandboxExecutor):
         if self.config.auth != "none":
             headers["Authorization"] = f"Bearer {self._identity_token()}"
         timeout = (
-            request.limits.timeout_seconds
-            + self.config.transport_overhead_seconds
+            request.limits.timeout_seconds + self.config.transport_overhead_seconds
         )
         deadline = time.monotonic() + timeout
         payload = request.model_dump_json().encode("utf-8")

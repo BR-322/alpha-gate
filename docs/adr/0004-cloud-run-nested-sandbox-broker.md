@@ -61,6 +61,14 @@ Transport, authentication, malformed broker responses, and unavailable
 sandbox launchers become typed executor results. They do not disappear from
 the experimental trial count.
 
+Every nested sandbox receives a unique name. The broker force-deletes that
+exact sandbox in a cancellation-shielded `finally` path after success,
+candidate failure, protocol failure, timeout, or request cancellation. Delete
+operations have a five-second deadline and three bounded attempts. The live
+parity suite's timeout case is therefore also a cleanup regression gate. The
+service-level `--min=0`, `--max=1`, concurrency-one, and 360-second request
+timeout remain independent cost bounds if nested-sandbox cleanup ever fails.
+
 Cloud Run sandboxes are a Pre-GA feature and may change without normal
 compatibility guarantees. Alpha-Gate keeps the local container executor as
 the reproducible reference, pins deployed image digests in reports, and does

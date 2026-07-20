@@ -132,9 +132,7 @@ class ExperimentSummary(BaseModel):
         for rank, outcome in enumerate(result.ranked_outcomes, start=1):
             metadata = outcome.evaluation.metadata
             sandbox_results = outcome.evaluation.sandbox_results
-            durations = tuple(
-                sandbox.duration_seconds for sandbox in sandbox_results
-            )
+            durations = tuple(sandbox.duration_seconds for sandbox in sandbox_results)
             candidates.append(
                 FinalCandidateSummary(
                     rank=rank,

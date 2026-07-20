@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
 from alpha_gate.candidate import CandidateProgram
-from alpha_gate.executors.base import ExecutionLimits, SandboxStatus
+from alpha_gate.executors.base import (
+    ExecutionLimits,
+    SandboxResult,
+    SandboxStatus,
+)
 from alpha_gate.executors.container import ContainerExecutor, ContainerExecutorConfig
 
 
@@ -24,9 +29,11 @@ def test_command_hardens_and_minimizes_container_mounts(tmp_path: Path) -> None:
             pids=32,
             tmpfs_mb=16,
         ),
+        "alpha-gate-test123",
     )
 
     assert command[:3] == ("/usr/bin/podman", "run", "--rm")
+    assert command[3:5] == ("--name", "alpha-gate-test123")
     assert "--network=none" in command
     assert "--read-only" in command
     assert "--pids-limit=32" in command
@@ -71,3 +78,34 @@ async def test_missing_runtime_is_typed_unavailable(
 
     assert result.status is SandboxStatus.UNAVAILABLE
     assert result.error == "docker executable was not found"
+
+
+@pytest.mark.asyncio
+async def test_timeout_always_force_removes_named_container(
+    monkeypatch: pytest.MonkeyPatch,
+    sandbox_request,
+) -> None:
+    executor = ContainerExecutor(
+        ContainerExecutorConfig(runtime_path="/usr/bin/docker")
+    )
+    timeout = SandboxResult(
+        status=SandboxStatus.TIMEOUT,
+        program_sha256=sandbox_request.program.sha256,
+        duration_seconds=1.0,
+        error="deadline",
+    )
+    execute = AsyncMock(return_value=timeout)
+    delete = AsyncMock()
+    executor._process_driver.execute = execute
+    monkeypatch.setattr(executor, "_delete_container", delete)
+    monkeypatch.setattr(
+        "alpha_gate.executors.container.uuid.uuid4",
+        lambda: type("UUID", (), {"hex": "test123"})(),
+    )
+
+    result = await executor.execute(sandbox_request)
+
+    assert result is timeout
+    command = execute.await_args.args[0]
+    assert command[command.index("--name") + 1] == "alpha-gate-test123"
+    delete.assert_awaited_once_with("/usr/bin/docker", "alpha-gate-test123")
