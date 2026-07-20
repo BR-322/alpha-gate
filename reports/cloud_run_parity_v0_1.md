@@ -2,11 +2,11 @@
 
 - Date: 2026-07-18
 - Outcome: Passed after adversarial iteration
-- Project: `YOUR_GCP_PROJECT_ID`
+- Project: `[redacted]`
 - Region: `us-east1`
 - Service: `alpha-gate-broker`
-- Passing revision: `YOUR_CLOUD_RUN_REVISION`
-- Private service URL: `https://YOUR_CLOUD_RUN_SERVICE_URL`
+- Passing revision: `[redacted]`
+- Private service URL: `[redacted]`
 - Pushed OCI index digest:
   `sha256:d99cf7b0b275d38072d3998a38b0fd8d5d1167c97fa19473fd472f88f06b40ea`
 - Resolved amd64 runtime manifest:
@@ -49,11 +49,10 @@ silently ignores that deterministic hash-seed environment variable.
 - service-level minimum zero and maximum one instance;
 - 360-second broker request timeout;
 - nested sandbox launcher omits egress, writable overlay, mounts, and secrets;
-- dedicated runtime identity
-  `YOUR_BROKER_SERVICE_ACCOUNT_EMAIL`;
+- dedicated runtime identity `[redacted]`;
 - runtime identity has no project IAM roles and no user-managed keys;
-- service IAM grants `roles/run.invoker` only to
-  `user:YOUR_CLOUD_IDENTITY_EMAIL`;
+- service IAM grants `roles/run.invoker` only to the authorized Cloud Identity
+  principal `[redacted]`;
 - broker image omits scoring, backtest, evaluator, market-data, report, and
   repository-history modules;
 - $50 monthly budget alert remains active at 50%, 75%, 90%, 100%, and 100%

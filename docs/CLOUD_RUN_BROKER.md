@@ -5,16 +5,26 @@ parity gate. Run these commands only after `gcloud auth login` succeeds for the
 Cloud Identity account. They create one private, scale-to-zero service and a
 regional Artifact Registry repository.
 
-The defaults below use project `YOUR_GCP_PROJECT_ID`, region `us-east1`,
-and a one-instance cap. The runtime service account receives no project roles.
+Set the deployment-specific values in your shell rather than committing them:
+
+```bash
+export ALPHA_GATE_GCP_PROJECT_ID="your-gcp-project-id"
+export ALPHA_GATE_GCP_REGION="us-east1"
+export ALPHA_GATE_CLOUD_IDENTITY_EMAIL="your-cloud-identity-email"
+export ALPHA_GATE_BROKER_SERVICE_ACCOUNT="alpha-gate-broker@${ALPHA_GATE_GCP_PROJECT_ID}.iam.gserviceaccount.com"
+export ALPHA_GATE_ARTIFACT_REGISTRY="${ALPHA_GATE_GCP_REGION}-docker.pkg.dev"
+```
+
+The examples retain a one-instance cap. The runtime service account receives
+no project roles.
 
 ## 1. Set a dedicated gcloud configuration
 
 ```bash
 gcloud config configurations create alpha-gate
-gcloud config set account YOUR_CLOUD_IDENTITY_EMAIL
-gcloud config set project YOUR_GCP_PROJECT_ID
-gcloud config set run/region us-east1
+gcloud config set account "${ALPHA_GATE_CLOUD_IDENTITY_EMAIL}"
+gcloud config set project "${ALPHA_GATE_GCP_PROJECT_ID}"
+gcloud config set run/region "${ALPHA_GATE_GCP_REGION}"
 ```
 
 If the configuration already exists, activate it instead:
@@ -39,7 +49,7 @@ needed for this gate.
 ```bash
 gcloud artifacts repositories create alpha-gate \
   --repository-format=docker \
-  --location=us-east1 \
+  --location="${ALPHA_GATE_GCP_REGION}" \
   --description="Alpha-Gate sandbox broker images"
 
 gcloud iam service-accounts create alpha-gate-broker \
@@ -52,12 +62,12 @@ runtime identity project roles and do not create or download a key.
 ## 4. Build and push the minimal amd64 image
 
 ```bash
-gcloud auth configure-docker us-east1-docker.pkg.dev
+gcloud auth configure-docker "${ALPHA_GATE_ARTIFACT_REGISTRY}"
 
 docker buildx build \
   --platform linux/amd64 \
   --file containers/cloud-run/Dockerfile \
-  --tag us-east1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/alpha-gate/broker:parity-v5 \
+  --tag "${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:parity-v5" \
   --push \
   .
 ```
@@ -72,10 +82,10 @@ once with `gcloud components install beta --quiet`.
 
 ```bash
 gcloud beta run deploy alpha-gate-broker \
-  --image=us-east1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/alpha-gate/broker:parity-v5 \
+  --image="${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:parity-v5" \
   --execution-environment=gen2 \
   --sandbox-launcher \
-  --service-account=YOUR_BROKER_SERVICE_ACCOUNT_EMAIL \
+  --service-account="${ALPHA_GATE_BROKER_SERVICE_ACCOUNT}" \
   --no-allow-unauthenticated \
   --concurrency=1 \
   --cpu=1 \
@@ -91,16 +101,16 @@ Grant only the Cloud Identity user permission to call this service:
 
 ```bash
 gcloud beta run services add-iam-policy-binding alpha-gate-broker \
-  --member=user:YOUR_CLOUD_IDENTITY_EMAIL \
+  --member="user:${ALPHA_GATE_CLOUD_IDENTITY_EMAIL}" \
   --role=roles/run.invoker \
-  --region=us-east1
+  --region="${ALPHA_GATE_GCP_REGION}"
 ```
 
 ## 6. Run the live parity gate
 
 ```bash
 export ALPHA_GATE_CLOUD_RUN_URL="$(gcloud run services describe alpha-gate-broker \
-  --region=us-east1 \
+  --region="${ALPHA_GATE_GCP_REGION}" \
   --format='value(status.url)')"
 
 uv sync --extra cloud --group dev
@@ -120,10 +130,11 @@ and inspect Cloud Run plus Artifact Registry costs after the parity run.
 The service and image repository can be removed independently if needed:
 
 ```bash
-gcloud run services delete alpha-gate-broker --region=us-east1
-gcloud artifacts repositories delete alpha-gate --location=us-east1
-gcloud iam service-accounts delete \
-  YOUR_BROKER_SERVICE_ACCOUNT_EMAIL
+gcloud run services delete alpha-gate-broker \
+  --region="${ALPHA_GATE_GCP_REGION}"
+gcloud artifacts repositories delete alpha-gate \
+  --location="${ALPHA_GATE_GCP_REGION}"
+gcloud iam service-accounts delete "${ALPHA_GATE_BROKER_SERVICE_ACCOUNT}"
 ```
 
 Deletion is intentionally manual; no project-wide cleanup command belongs in
