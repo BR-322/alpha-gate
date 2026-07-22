@@ -1,4 +1,4 @@
-# ADR 0002: Windowed program backtests and authoritative scoring
+# ADR 0002: Windowed program backtests and Gate Runner scoring
 
 - Status: Accepted
 - Date: 2026-07-17
@@ -7,8 +7,8 @@
 
 Python candidates return target weights rather than Gate Runner's
 `StrategyConfig`. Gate Runner's backtester cannot consume those weights, but
-its `HonestScorer` contains the benchmark's authoritative DSR, behavioral
-diversity, CSCV/PBO, tail-risk, activity-gate, and reward implementation.
+its `HonestScorer` implements the benchmark's DSR, behavioral diversity,
+CSCV/PBO, tail-risk, activity-gate, and reward calculations.
 
 A program also needs historical observations to compose trailing signals. If
 the complete evaluation panel were mounted or sent at once, future rows would
@@ -51,10 +51,10 @@ count to an unrelated representation.
 
 ## Consequences
 
-- Gate Runner stays authoritative for group-scoring math.
-- Alpha-Gate is authoritative for execution lag, program costs, and return
+- Gate Runner remains responsible for group-scoring math.
+- Alpha-Gate remains responsible for execution lag, program costs, and return
   construction.
 - Duplicate proposals are scored as separate observed trials rather than
   collapsed by Gate Runner's deterministic-config cache.
-- A full candidate evaluation launches one sandbox per scoring window. This is
-  intentionally conservative and will inform later Cloud Run cost estimates.
+- A full candidate evaluation launches one sandbox per scoring window. This
+  isolates window state and makes the Cloud Run cost multiplier explicit.

@@ -23,15 +23,16 @@ and lineage metadata but never evaluates them.
 
 `LocalEvolver` is the reference control. It deterministically mutates numeric
 literals only inside the same `EVOLVE-BLOCK` markers consumed by AlphaEvolve.
-This deliberately modest baseline measures improvement over reproducible local
-source mutation; it is not presented as an equivalent creative model.
+This simple baseline measures improvement over reproducible local source
+mutation. It is not equivalent to a coding model.
 
 The runner backtests each proposal exactly once and retains its raw
 `ProgramEvaluation`. After each batch it rescores every evaluation observed in
-the run as one cumulative group. DSR trial count, PBO, and behavioral-diversity
-diagnostics therefore reflect all search attempts to date, including invalid
-programs. The evaluation budget is an exact proposal count; the final batch is
-truncated rather than allowed to overshoot.
+the run as one cumulative group. The DSR trial count includes every proposal,
+including invalid programs. PBO and behavioral-diversity diagnostics are
+recomputed from all valid results observed so far. The evaluation budget is an
+exact proposal count; the final batch is truncated rather than allowed to
+overshoot.
 
 ## Ledger
 
@@ -53,8 +54,8 @@ JSON. It contains the complete experiment and evaluator configuration plus
 every candidate source, lineage, executor accounting, and final cumulative
 score in ranked order. The summary is separate because final-score update
 events must not rewrite or blur the event-time snapshots in the append-only
-ledger. Resume support remains intentionally deferred; the ledger is an audit
-trail, not a checkpoint format.
+ledger. Resume support is deferred; the ledger is an audit trail, not a
+checkpoint format.
 
 ## Consequences
 

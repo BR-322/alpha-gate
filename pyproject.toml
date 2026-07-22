@@ -1,7 +1,7 @@
 [project]
 name = "alpha-gate"
 version = "0.1.0"
-description = "Honesty-shaped evolutionary search for sandboxed Python trading strategies"
+description = "Research framework for sandboxed Python trading strategy evaluation"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
