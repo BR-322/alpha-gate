@@ -1,6 +1,6 @@
 # ADR 0004: Cloud Run nested-sandbox broker
 
-- Status: Accepted with preview contingency
+- Status: Accepted; live parity passed 2026-07-18
 - Date: 2026-07-18
 
 ## Context
@@ -29,10 +29,9 @@ waits for one validated response, and only then sends the next bar. The nested
 sandbox receives candidate source, the protocol worker, and the current frame;
 future frames stay in broker process memory.
 
-The broker image is deliberately narrower than the development image. It
-contains the candidate validator, protocol models, process driver, worker,
-Pydantic, and NumPy. It excludes scoring code, reward thresholds, market
-loaders, reports, repository history, and cloud credentials.
+The broker image contains only the candidate validator, protocol models,
+process driver, worker, Pydantic, and NumPy. It excludes scoring code, reward
+thresholds, market loaders, reports, repository history, and cloud credentials.
 
 The launcher command does not opt into `--allow-egress`, `--write`, bind
 mounts, snapshots, or inherited environment. Cloud Run request concurrency is
@@ -71,8 +70,10 @@ timeout remain independent cost bounds if nested-sandbox cleanup ever fails.
 
 Cloud Run sandboxes are a Pre-GA feature and may change without normal
 compatibility guarantees. Alpha-Gate keeps the local container executor as
-the reproducible reference, pins deployed image digests in reports, and does
-not make the preview backend authoritative until the live parity suite passes.
+the reproducible reference and records deployed image digests in its reports.
+The Cloud Run backend passed the live parity suite on 2026-07-18 and was
+accepted for the first bounded AlphaEvolve integration. See
+[`reports/cloud_run_parity_v0_1.md`](../../reports/cloud_run_parity_v0_1.md).
 
 ## References
 

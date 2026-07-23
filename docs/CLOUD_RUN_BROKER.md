@@ -1,11 +1,24 @@
-# Cloud Run broker provisioning
+# Cloud Run broker setup
 
-This is the manual and CLI boundary for the Alpha-Gate Cloud Run sandbox
-parity gate. Run these commands only after `gcloud auth login` succeeds for the
-Cloud Identity account. They create one private, scale-to-zero service and a
-regional Artifact Registry repository.
+This guide provisions the Cloud Run implementation of Alpha-Gate's
+`SandboxExecutor`. It creates three project resources:
 
-Set the deployment-specific values in your shell rather than committing them:
+- a regional Artifact Registry repository;
+- a service account with no project roles; and
+- a private Cloud Run service that scales to zero and runs at most one instance.
+
+The broker has already passed the shared local/cloud executor suite. See
+[Cloud Run parity v0.1](../reports/cloud_run_parity_v0_1.md) for the tested
+revision, image digests, and results. Use this guide to recreate or update that
+deployment.
+
+Run the commands from the repository root after authenticating the intended
+Cloud Identity account with `gcloud auth login`.
+
+## Set deployment values
+
+Set deployment-specific identifiers in the shell. They are not secrets, but
+they should not be hardcoded in the repository.
 
 ```bash
 export ALPHA_GATE_GCP_PROJECT_ID="your-gcp-project-id"
@@ -13,27 +26,41 @@ export ALPHA_GATE_GCP_REGION="us-east1"
 export ALPHA_GATE_CLOUD_IDENTITY_EMAIL="your-cloud-identity-email"
 export ALPHA_GATE_BROKER_SERVICE_ACCOUNT="alpha-gate-broker@${ALPHA_GATE_GCP_PROJECT_ID}.iam.gserviceaccount.com"
 export ALPHA_GATE_ARTIFACT_REGISTRY="${ALPHA_GATE_GCP_REGION}-docker.pkg.dev"
+export ALPHA_GATE_BROKER_IMAGE_TAG="replace-with-a-unique-tag"
 ```
 
-The examples retain a one-instance cap. The runtime service account receives
-no project roles.
+Use a new image tag for each deployment. The parity report records the exact
+digest used for the accepted test run.
 
-## 1. Set a dedicated gcloud configuration
+## 1. Select the gcloud account and project
+
+Create a dedicated gcloud configuration once:
 
 ```bash
 gcloud config configurations create alpha-gate
-gcloud config set account "${ALPHA_GATE_CLOUD_IDENTITY_EMAIL}"
-gcloud config set project "${ALPHA_GATE_GCP_PROJECT_ID}"
-gcloud config set run/region "${ALPHA_GATE_GCP_REGION}"
 ```
 
-If the configuration already exists, activate it instead:
+If it already exists, activate it instead:
 
 ```bash
 gcloud config configurations activate alpha-gate
 ```
 
-## 2. Enable the two required APIs
+Set and verify the active account, project, and region:
+
+```bash
+gcloud config set account "${ALPHA_GATE_CLOUD_IDENTITY_EMAIL}"
+gcloud config set project "${ALPHA_GATE_GCP_PROJECT_ID}"
+gcloud config set run/region "${ALPHA_GATE_GCP_REGION}"
+
+gcloud auth list
+gcloud config list
+```
+
+Do not continue unless the displayed account and project are the intended
+Alpha-Gate resources.
+
+## 2. Enable the required APIs
 
 ```bash
 gcloud services enable \
@@ -41,25 +68,33 @@ gcloud services enable \
   run.googleapis.com
 ```
 
-No Secret Manager, GKE, VPC connector, Cloud SQL, or service-account key is
-needed for this gate.
+This deployment does not require Secret Manager, GKE, a VPC connector, Cloud
+SQL, or a downloadable service-account key.
 
-## 3. Create the image repository and zero-role runtime identity
+## 3. Create the image repository and runtime identity
+
+Create the Artifact Registry repository:
 
 ```bash
 gcloud artifacts repositories create alpha-gate \
   --repository-format=docker \
   --location="${ALPHA_GATE_GCP_REGION}" \
   --description="Alpha-Gate sandbox broker images"
+```
 
+Create the broker service account:
+
+```bash
 gcloud iam service-accounts create alpha-gate-broker \
   --display-name="Alpha-Gate Cloud Run broker"
 ```
 
-An `ALREADY_EXISTS` response is safe when resuming setup. Do not grant the
-runtime identity project roles and do not create or download a key.
+An `ALREADY_EXISTS` response is expected when resuming an existing setup. Do
+not grant this service account project roles and do not create a key for it.
 
-## 4. Build and push the minimal amd64 image
+## 4. Build and push the broker image
+
+Configure Docker authentication, then build the amd64 image:
 
 ```bash
 gcloud auth configure-docker "${ALPHA_GATE_ARTIFACT_REGISTRY}"
@@ -67,22 +102,28 @@ gcloud auth configure-docker "${ALPHA_GATE_ARTIFACT_REGISTRY}"
 docker buildx build \
   --platform linux/amd64 \
   --file containers/cloud-run/Dockerfile \
-  --tag "${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:parity-v5" \
+  --tag "${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:${ALPHA_GATE_BROKER_IMAGE_TAG}" \
   --push \
   .
 ```
 
-The Docker build context is allow-listed. The broker image contains no scorer,
-market data, reports, or repository metadata.
+The allow-listed Docker build context excludes the scorer, market data,
+reports, and repository metadata from the image.
 
-## 5. Deploy one private, scale-to-zero broker
+## 5. Deploy the private broker
 
-The sandbox launcher is currently a beta gcloud flag. Install that component
-once with `gcloud components install beta --quiet`.
+Cloud Run sandboxes are currently a Preview feature exposed through the beta
+gcloud component. Install that component once:
+
+```bash
+gcloud components install beta --quiet
+```
+
+Deploy the service:
 
 ```bash
 gcloud beta run deploy alpha-gate-broker \
-  --image="${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:parity-v5" \
+  --image="${ALPHA_GATE_ARTIFACT_REGISTRY}/${ALPHA_GATE_GCP_PROJECT_ID}/alpha-gate/broker:${ALPHA_GATE_BROKER_IMAGE_TAG}" \
   --execution-environment=gen2 \
   --sandbox-launcher \
   --service-account="${ALPHA_GATE_BROKER_SERVICE_ACCOUNT}" \
@@ -97,7 +138,7 @@ gcloud beta run deploy alpha-gate-broker \
   --set-env-vars=ALPHA_GATE_CPU_CEILING=1,ALPHA_GATE_MEMORY_CEILING_MB=512
 ```
 
-Grant only the Cloud Identity user permission to call this service:
+Allow only the selected Cloud Identity user to invoke it:
 
 ```bash
 gcloud beta run services add-iam-policy-binding alpha-gate-broker \
@@ -106,7 +147,10 @@ gcloud beta run services add-iam-policy-binding alpha-gate-broker \
   --region="${ALPHA_GATE_GCP_REGION}"
 ```
 
-## 6. Run the live parity gate
+## 6. Run the parity suite
+
+Read the private service URL into the environment and run the cloud-marked
+tests:
 
 ```bash
 export ALPHA_GATE_CLOUD_RUN_URL="$(gcloud run services describe alpha-gate-broker \
@@ -117,25 +161,37 @@ uv sync --extra cloud --group dev
 uv run pytest -m cloud -v
 ```
 
-The client mints a short-lived ID token from the active gcloud identity and
-caches it only in memory. A passing gate must cover the reference candidate,
-candidate runtime failure, invalid weights, timeout, and output flooding.
+The client obtains a short-lived ID token from the active gcloud identity and
+keeps it in memory. The parity suite checks:
 
-## 7. Inspect cost and tear down if the preview is unsuitable
+- successful execution of the reference candidate;
+- candidate runtime failure;
+- invalid portfolio weights;
+- timeout and subsequent cleanup; and
+- output flooding.
 
-Cloud Run has no minimum instance charge with `--min=0`; requests consume CPU
-and memory while active. Keep the existing $50 project budget alert in place
-and inspect Cloud Run plus Artifact Registry costs after the parity run.
+Do not use a deployment for candidate experiments unless all parity cases
+pass.
 
-The service and image repository can be removed independently if needed:
+## 7. Check cost and remove unused resources
+
+With `--min=0`, the broker has no continuously running instance. Requests use
+CPU and memory while active, and stored images incur Artifact Registry cost.
+Keep the project-level $50 budget alert enabled and review billing after cloud
+tests or experiments.
+
+The following commands delete separate resources. Verify the active project
+and region before running any of them.
 
 ```bash
 gcloud run services delete alpha-gate-broker \
   --region="${ALPHA_GATE_GCP_REGION}"
+
 gcloud artifacts repositories delete alpha-gate \
   --location="${ALPHA_GATE_GCP_REGION}"
+
 gcloud iam service-accounts delete "${ALPHA_GATE_BROKER_SERVICE_ACCOUNT}"
 ```
 
-Deletion is intentionally manual; no project-wide cleanup command belongs in
-the repository.
+Cleanup remains a manual, resource-by-resource operation. The repository does
+not provide a project-wide deletion command.

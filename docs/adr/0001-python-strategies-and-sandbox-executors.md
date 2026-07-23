@@ -6,15 +6,13 @@
 ## Context
 
 Gate Runner asks a solver to compose a bounded JSON strategy from curated
-signals. Alpha-Gate instead wants to lean into AlphaEvolve's strength as a
-coding agent: candidates may compose their own signals and stateful logic in
-Python. That expands the discovery surface and the reward-hacking surface at
-the same time.
+signals. Alpha-Gate instead lets AlphaEvolve write Python, including custom
+signals and stateful logic. This permits a broader range of strategies, but it
+also gives the evolver more ways to exploit weaknesses in the evaluation.
 
-The official AlphaEvolve client confirms that generation is managed in Google
-Cloud while the controller and customer evaluator run wherever the customer
-chooses. Alpha-Gate can therefore keep evaluation authoritative and local to a
-sandbox backend.
+The official AlphaEvolve client separates managed generation from the
+customer-supplied evaluator. Alpha-Gate can therefore keep candidate execution
+and scoring in its own environment.
 
 Gate Runner's current `StrategyBacktester` accepts a strict `StrategyConfig`.
 It cannot execute arbitrary Python without changing its public contract.
@@ -32,9 +30,9 @@ Alpha-Gate owns four separable interfaces:
 4. An honesty scorer evaluates a complete candidate group, preserving trial
    counts and cross-candidate diagnostics.
 
-The initial executor is Docker/Podman-compatible. A Cloud Run sandbox backend
-will implement the same request and result models. GKE Autopilot with gVisor is
-the fallback if Cloud Run's preview feature is unsuitable.
+The local executor is Docker/Podman-compatible. The Cloud Run backend uses the
+same request and result models. GKE Autopilot with gVisor remains the fallback
+if Cloud Run's preview feature becomes unsuitable.
 
 ## Candidate protocol
 
@@ -60,9 +58,9 @@ enforces finite values, symbol count, per-position bounds, and a gross-exposure
 cap before using it. Signed weights are allowed so the Python search space is
 not artificially restricted to Gate Runner's current long-only grammar.
 
-This lockstep protocol is load-bearing. Mounting a complete evaluation panel
-inside the candidate container would create a trivial look-ahead channel even
-with a correct backtester.
+The lockstep protocol prevents look-ahead access. Mounting a complete
+evaluation panel inside the candidate container would expose future rows even
+if the backtester applied the correct execution lag.
 
 ## Trust boundary
 
